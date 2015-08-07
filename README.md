@@ -1,10 +1,6 @@
-SelectableTextView
-==================
+自由选择文字的textview， 可自定义弹出菜单
+==============
 
-Android - My implementation of a selectable TextView for Android 2.3.3 and up.
 
-This is NOT an EditText with selection enabled pretending to be a TextView.
-I've implemented cursor controller on top of the TextView. (The source code of Android was a great help for me in making my own implementation.)
-
-You should be able to build the source and run the example on your Android device without any modifications. 
-Long click to start the text selection.
+感谢zhouray/SelectableTextView 的作者，我在此基础上增加了弹出菜单，并且可以跟随光标移动
+---------------
