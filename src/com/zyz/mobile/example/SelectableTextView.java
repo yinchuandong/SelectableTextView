@@ -606,6 +606,9 @@ public class SelectableTextView extends TextView implements OnClickListener, OnL
 
 	public boolean onLongClick(View v) {
 //		Log.d("inner long click", "true");
+		if(mSelectionController.isShowing()){
+			hideCursor();
+		}
 		showSelectionCursors();
 		return true;
 	}
