@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:orientation="horizontal"
+              android:layout_width="200dp"
+              android:layout_height="60dp"
+              android:background="#f06939"
+        >
+        <TextView 
+            android:id="@+id/menu_copy"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:text="复制"
+            android:background="#000"
+            android:textColor="#fff"
+            android:layout_marginRight="10dp"
+            />
+        
+        <TextView 
+            android:id="@+id/menu_brower"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:text="浏览器"
+            android:background="#000"
+            android:textColor="#fff"
+            android:layout_marginRight="10dp"
+            
+            />
+        
+        <TextView 
+            android:id="@+id/menu_lookup"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:text="查询字典"
+            android:textColor="#fff"
+            android:background="#000"
+            
+            />
+</LinearLayout>
+
