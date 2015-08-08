@@ -15,6 +15,7 @@ import net.londatiga.android.QuickAction.OnDismissListener;
 import android.content.Context;
 import android.graphics.Rect;
 import android.graphics.Region;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.util.AttributeSet;
@@ -42,6 +43,9 @@ public class BTWebView extends WebView implements TextSelectionJavascriptInterfa
 	
 	/** The context menu. */
 	private QuickAction mContextMenu;
+	
+	/** The listener of menu action */
+	private QuickAction.OnActionItemClickListener mOnActionItemClickListener;
 	
 	/** The drag layer for selection. */
 	private DragLayer mSelectionDragLayer;
@@ -244,11 +248,6 @@ public class BTWebView extends WebView implements TextSelectionJavascriptInterfa
 		region.setEmpty();
 		this.lastSelectedRegion = region;
 		
-		// Load up the android asset file
-		String filePath = "file:///android_asset/content.html";
-		
-		// Load the url
-		this.loadUrl(filePath);
 		
 	}
 	
@@ -535,8 +534,8 @@ public class BTWebView extends WebView implements TextSelectionJavascriptInterfa
 		 
 		
 		
-		// The action menu
-		mContextMenu  = new QuickAction(this.getContext(), QuickAction.HORIZONTAL);
+		// The action menu, 设置水平或者垂直布局
+		mContextMenu  = new QuickAction(this.getContext(), QuickAction.VERTICAL);
 		mContextMenu.setOnDismissListener(this);
 		
 		// Add buttons
@@ -554,20 +553,10 @@ public class BTWebView extends WebView implements TextSelectionJavascriptInterfa
 			@Override
 			public void onItemClick(QuickAction source, int pos,
 				int actionId) {
-				// TODO Auto-generated method stub
-				if (actionId == 1) { 
-					// Do Button 1 stuff
-					Log.i(TAG, "Hit Button 1: " + selectedText);
-		        } 
-				else if (actionId == 2) { 
-					// Do Button 2 stuff
-					Log.i(TAG, "Hit Button 2");
-		        } 
-		        else if (actionId == 3) { 
-		        	// Do Button 3 stuff
-					Log.i(TAG, "Hit Button 3");
-		        }
 				
+				if (mOnActionItemClickListener != null) {
+					mOnActionItemClickListener.onItemClick(source, pos, actionId);
+				}
 				contextMenuVisible = false;
 					
 			}
@@ -576,6 +565,26 @@ public class BTWebView extends WebView implements TextSelectionJavascriptInterfa
 		
 		this.contextMenuVisible = true;
 		mContextMenu.show(this, displayRect);
+	}
+	
+	/**
+	 * 设置菜单的点击事件
+	 * @param onActionItemClickListener
+	 */
+	public void setOnMenuActionItemClickListener(QuickAction.OnActionItemClickListener onActionItemClickListener){
+		this.mOnActionItemClickListener = onActionItemClickListener;
+	}
+	
+	/**
+	 * 获得选中的文字
+	 * @return
+	 */
+	public String getSelectedText(){
+		return this.selectedText;
+	}
+	
+	public String getSelectedRange(){
+		return this.selectedRange;
 	}
 	
 	
@@ -639,7 +648,8 @@ public class BTWebView extends WebView implements TextSelectionJavascriptInterfa
 		try {
 			JSONObject selectionBoundsObject = new JSONObject(handleBounds);
 			
-			float scale = getDensityIndependentValue(this.getScale(), ctx);
+//			float scale = getDensityIndependentValue(this.getScale(), ctx); //使用改行会warning
+			float scale = 1.0f;
 			
 			Rect handleRect = new Rect();
 			handleRect.left = (int) (getDensityDependentValue(selectionBoundsObject.getInt("left"), getContext()) * scale);

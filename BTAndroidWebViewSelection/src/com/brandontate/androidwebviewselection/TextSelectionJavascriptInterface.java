@@ -89,8 +89,12 @@ public class TextSelectionJavascriptInterface {
 	 * @param showUnHighlight
 	 */
 	public void selectionChanged(String range, String text, String handleBounds, String menuBounds){
-		if(this.listener != null)
-			this.listener.tsjiSelectionChanged(range, text, handleBounds, menuBounds);
+		try {
+			if(this.listener != null)
+				this.listener.tsjiSelectionChanged(range, text, handleBounds, menuBounds);
+		} catch (Exception e) {
+			// TODO: handle exception
+		}
 		
 	}
 	
