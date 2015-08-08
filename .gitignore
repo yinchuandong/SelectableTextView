@@ -9,8 +9,11 @@
 *.class
 
 # generated files
-bin/
-gen/
+SelectableTextView/bin/
+SelectableTextView/gen/
+
+BTAndroidWebViewSelection/bin/
+BTAndroidWebViewSelection/gen/
 
 # Local configuration file (sdk path, etc)
 local.properties
