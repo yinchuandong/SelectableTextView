@@ -51,17 +51,5 @@ public class BTAndroidWebViewSelectionActivity extends Activity {
 		});
 	}
 	
-	public Handler jsHandler = new Handler(){
-
-		@Override
-		public void handleMessage(Message msg) {
-			// TODO Auto-generated method stub
-			super.handleMessage(msg);
-			if(webView == null) return;
-			String url = msg.getData().getString("js");
-			webView.loadUrl(url);
-		}
-		
-	};
 
 }

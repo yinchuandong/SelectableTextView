@@ -1,71 +1,56 @@
-/*
- Copyright (C) 2013 Ray Zhou
- 
- JadeRead is free software: you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published by
- the Free Software Foundation, either version 3 of the License, or
- (at your option) any later version.
- 
- JadeRead is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
- 
- You should have received a copy of the GNU General Public License
- along with JadeRead.  If not, see <http://www.gnu.org/licenses/>
- 
- Author: Ray Zhou
- Date: 2013 04 26
- 
- */
-
-package com.zyz.mobile.example;
-
-import java.util.zip.Inflater;
+package com.stra.studyhelper.widget;
 
 import android.R.integer;
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
-import android.graphics.Paint;
+import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.text.Layout;
+import android.text.Spannable;
+import android.text.Spanned;
 import android.text.style.BackgroundColorSpan;
+import android.text.style.CharacterStyle;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.Gravity;
-import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.View.OnClickListener;
 import android.view.View.OnLongClickListener;
-import android.view.ViewGroup;
 import android.view.ViewGroup.LayoutParams;
 import android.view.ViewTreeObserver;
+import android.widget.LinearLayout;
 import android.widget.PopupWindow;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
+import com.stra.studyhelper.R;
+import com.stra.studyhelper.widget.ObservableScrollView.OnScrollChangedListener;
+
 /**
  * User: ray Date: 2013-02-01
  * <p/>
- * WARNING: SelectableTextView is designed to be used inside a ScrollView. The selection
- * functionality have only been tested under the assumption that the parent of the view is a
- * ScrollView.
+ * WARNING: SelectableTextView is designed to be used inside a ScrollView. The
+ * selection functionality have only been tested under the assumption that the
+ * parent of the view is a ScrollView.
  * <p/>
- * The functionality WILL PROBABLY breaks if the TextView is not inside a ScrollView.
+ * The functionality WILL PROBABLY breaks if the TextView is not inside a
+ * ScrollView.
  */
 @SuppressLint("NewApi")
-public class SelectableTextView extends TextView implements OnClickListener, OnLongClickListener{
+public class SelectableTextView extends TextView implements OnClickListener,
+		OnLongClickListener {
 
 	private final static int DEFAULT_SELECTION_LEN = 5;
+	private final int SPACE_CODE = 0x20;
 	
 	private int mDefaultSelectionColor;
-	private View mPopupMenuView;
 	private int mTouchX;
 	private int mTouchY;
 
+	
 	/**
 	 * the selection information used by the cursor
 	 */
@@ -81,6 +66,12 @@ public class SelectableTextView extends TextView implements OnClickListener, OnL
 	 * DONT ACCESS DIRECTLY, use getSelectionController() instead
 	 */
 	private SelectionCursorController mSelectionController;
+	
+	/**
+	 * the position of ObservableScrollView
+	 */
+	private Rect mParentRect;
+	
 
 	@SuppressWarnings("unused")
 	public SelectableTextView(Context context) {
@@ -102,6 +93,7 @@ public class SelectableTextView extends TextView implements OnClickListener, OnL
 	}
 
 	private void init() {
+		mParentRect = new Rect();
 		mCursorSelection = new SelectionInfo();
 		mSelectionController = new SelectionCursorController();
 
@@ -126,10 +118,28 @@ public class SelectableTextView extends TextView implements OnClickListener, OnL
 			((ObservableScrollView) getParent()).addOnScrollChangedListener(new OnScrollChangedListener() {
 				@Override
 				public void onScrollChanged(ObservableScrollView scrollView, int x, int y, int oldx, int oldy) {
-					mSelectionController.snapToSelection();
+//					mSelectionController.snapToSelection();
+					//滚动scrollview的时候取消反选
+					hideCursor();
 				}
 			});
 		}
+	}
+	
+	
+
+	@Override
+	protected void onSizeChanged(int w1, int h1, int oldw, int oldh) {
+		// TODO Auto-generated method stub
+		super.onSizeChanged(w1, h1, oldw, oldh);
+		
+		//获得父类scrollview的边界
+		ObservableScrollView parent = (ObservableScrollView) getParent();
+		mParentRect.left = parent.getLeft();
+		mParentRect.top = parent.getTop();
+		mParentRect.right = parent.getRight();
+		mParentRect.bottom = parent.getBottom();
+		
 	}
 
 	public void setDefaultSelectionColor(int color) {
@@ -141,7 +151,6 @@ public class SelectableTextView extends TextView implements OnClickListener, OnL
 	 * @param view
 	 */
 	public void setPopupMenuView(View view){
-		this.mPopupMenuView = view;
 		this.mSelectionController.setPopupMenuView(view);
 	}
 
@@ -619,6 +628,24 @@ public class SelectableTextView extends TextView implements OnClickListener, OnL
 //		Log.d("inner touch event", "true");
 		mTouchX = (int) event.getX();
 		mTouchY = (int) event.getY();
+		
+		switch (event.getAction()) {
+		case MotionEvent.ACTION_CANCEL:
+		case MotionEvent.ACTION_UP:
+			int left = getLeft();
+			int right = getRight();
+			int top = getTop();
+			int bottom = getBottom();
+			Log.d("onTouchEvent", "up");
+
+			
+			
+			break;
+
+		default:
+			break;
+		}
+		
 		return super.onTouchEvent(event);
 	}
 	
@@ -633,15 +660,53 @@ public class SelectableTextView extends TextView implements OnClickListener, OnL
 	 * show the cursors of text selector
 	 */
 	public void showSelectionCursors() {
+		String text = getText().toString();
+		char[] charArr = text.toCharArray();
 		int start = getPreciseOffset(mTouchX, mTouchY);
-
-		if (start > -1) {
-			int end = start + DEFAULT_SELECTION_LEN;
+		
+		int end = start + 1;
+		
+		if (start <= -1 || end > text.length() || start > text.length()) {
+			return;
+		}
+		
+		if(charArr[start] == SPACE_CODE){//跳过空格
+			start++;
+		}
+		
+		if(!isEnglishChar(charArr[start])){
+			//如果不是英文字母，则默认选中指定个数
+			end = start + DEFAULT_SELECTION_LEN;
 			if (end >= getText().length()) {
 				end = getText().length() - 1;
 			}
-			showSelectionControls(start, end);
+		}else{
+			//如果是英文字母，则选中该单词
+			for(int i = start; i >= 0; i--){
+				if(!isEnglishChar(charArr[i])){
+					break;
+				}
+				start--;
+			}
+			start++; //跳过空格
+			for(int i = end; i < text.length(); i++){
+				if(!isEnglishChar(charArr[i])){
+					break;
+				}
+				end++;
+			}
 		}
+		
+		showSelectionControls(start, end);
+	}
+	
+	public boolean isEnglishChar(char ch)
+	{
+		if (ch >= 'A' && ch <= 'Z' || ch >= 'a' && ch <= 'z' || ch == '\'' && ch <= '-')
+		{
+			return true;
+		}
+		return false;
 	}
 
 	
@@ -712,9 +777,15 @@ public class SelectableTextView extends TextView implements OnClickListener, OnL
 
 				SelectableTextView.this.getAdjusteStartXY(start, scroll_x, scroll_y, coords);
 				startHandle.pointTo(coords[0], coords[1]);
+				final int[] startCoords = coords.clone();
 
 				SelectableTextView.this.getAdjustedEndXY(end, scroll_x, scroll_y, coords);
 				endHandle.pointTo(coords[0], coords[1]);
+				
+				//设置menu
+				int menuX = (coords[0] + startCoords[0] - mMenuHandle.getWidth()) / 2;
+				int menuY = Math.min(coords[1], startCoords[1]) - mMenuHandle.getHeight() - getLineHeight();
+				mMenuHandle.pointTo(menuX, menuY);
 			}
 		}
         
@@ -745,11 +816,14 @@ public class SelectableTextView extends TextView implements OnClickListener, OnL
 			mIsShowing = true;
 			select(a, b);
 
+
+			int menuX = (coords[0] + startCoords[0] - mMenuHandle.getWidth()) / 2;
+			int menuY = Math.min(coords[1], startCoords[1]) - mMenuHandle.getHeight() - getLineHeight();
+			mMenuHandle.show(menuX, menuY);
+			
 			if (mOnCursorStateChangedListener != null) {
 				mOnCursorStateChangedListener.onShowCursors(SelectableTextView.this);
 		    }
-			
-			mMenuHandle.show((coords[0] + startCoords[0]) / 2, coords[1] + mStartHandle.getCursorHeight());
 		}
 
 
@@ -806,12 +880,14 @@ public class SelectableTextView extends TextView implements OnClickListener, OnL
             
 			cursorHandle.pointTo(x, y);
 			
-			//set the position of menu
-			int menuX = (mStartHandle.getCurX() + mEndHandle.getCurX()) / 2;
-			int menuY = Math.max(mStartHandle.getCurY(), mEndHandle.getCurY()) + mStartHandle.getCursorHeight();
-			mMenuHandle.pointTo(menuX, menuY);
-			
-//			Log.d("x:y", mStartHandle.getCurX() + "-" + mEndHandle.getCurY());
+			do{
+				//set the position of menu
+				int menuX = (mStartHandle.getCurX() + mEndHandle.getCurX() - mMenuHandle.getWidth()) / 2;
+				int menuY = Math.min(mStartHandle.getCurY(), mEndHandle.getCurY()) - mMenuHandle.getHeight() - getLineHeight();
+				mMenuHandle.pointTo(menuX, menuY);
+				
+//				Log.d("x:y", mStartHandle.getCurX() + "-" + mEndHandle.getCurY());
+			}while(false);
             
 			if (mOnCursorStateChangedListener != null) {
 				mOnCursorStateChangedListener.onPositionChanged(SelectableTextView.this, x, y, oldx, oldy);
@@ -853,8 +929,7 @@ public class SelectableTextView extends TextView implements OnClickListener, OnL
 			}
 		}
 	}
-    
-    
+  
 	/**
 	 * represents a single cursor
 	 */
@@ -920,7 +995,7 @@ public class SelectableTextView extends TextView implements OnClickListener, OnL
             
 			mController = controller;
             
-			mDrawable = getResources().getDrawable(R.drawable.cursor);
+			mDrawable = getResources().getDrawable(R.drawable.select_cursor);
             
 			/* My Note
              At first I tried using mContainer = new PopupWindow(SelectableTextView.this.getContext())
@@ -939,8 +1014,8 @@ public class SelectableTextView extends TextView implements OnClickListener, OnL
              e.g. if the drawable is a 15 x 20 image and we load the image on a Nexus 4 (which
              has a density of 2.0), getIntrinsicWidth() shall return 15 * 2 = 30
 			 */
-			mHeight = mDrawable.getIntrinsicHeight();
-			mWidth = mDrawable.getIntrinsicWidth();
+			mHeight = mDrawable.getIntrinsicHeight() * 2;
+			mWidth = mDrawable.getIntrinsicWidth() * 2;
             
 			// the PopupWindow has an initial dimension of (0, 0)
 			// must set the width/height of the popupwindow in order for it to be drawn
@@ -997,13 +1072,16 @@ public class SelectableTextView extends TextView implements OnClickListener, OnL
 				}
 				case MotionEvent.ACTION_MOVE: {
 					// calculate the raw (x, y) the cursor is POINTING TO
-					mCurX = mAdjustX + rawX;
-					mCurY = mAdjustY + rawY;
-                    
-					mController.updatePosition(this, mCurX, mCurY, mOldX, mOldY);
-                    
-					mOldX = mCurX;
-					mOldY = mCurY;
+					
+					if (mParentRect.left <= rawX && rawX <= mParentRect.right 
+						&& mParentRect.top + this.mHeight <= rawY && rawY <= mParentRect.bottom + this.mHeight) {
+						mController.updatePosition(this, mCurX, mCurY, mOldX, mOldY);
+						mCurX = mAdjustX + rawX;
+						mCurY = mAdjustY + rawY;
+						mOldX = mCurX;
+						mOldY = mCurY;
+					}
+					
 					break;
 				}
 			}
@@ -1119,10 +1197,11 @@ public class SelectableTextView extends TextView implements OnClickListener, OnL
 		 */
 		private PopupWindow mContainer;
 		
+		private int width = 0;
+		private int height = 0;
         
         
 		public MenuHandle() {
-            
 			mContainer = new PopupWindow();
 
 		}
@@ -1132,9 +1211,19 @@ public class SelectableTextView extends TextView implements OnClickListener, OnL
 			mContainer.setWidth(LayoutParams.WRAP_CONTENT);
 			mContainer.setHeight(LayoutParams.WRAP_CONTENT);
 			mContainer.setClippingEnabled(false);
+			//测量view的宽高，否则之后无法获取
+			view.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
+			this.width = view.getMeasuredWidth();
+			this.height = view.getMeasuredHeight();
 		}
-        
-        
+		
+		public int getWidth() {
+			return width;
+		}
+
+		public int getHeight() {
+			return height;
+		} 
         
 		public boolean isShowing() {
 			return mContainer.isShowing();
@@ -1151,12 +1240,10 @@ public class SelectableTextView extends TextView implements OnClickListener, OnL
 			if(view == null){
 				return;
 			}
-			
 			int cw = SelectableTextView.this.getMeasuredWidth();
 			int iw = view.getMeasuredWidth();
-			Log.d("widht ----- ", cw + ":" + iw);
-
-			
+			x = x + iw >= cw ? cw - iw : x;
+			x = x < 0 ? 0 : x;
 			mContainer.showAtLocation(SelectableTextView.this, Gravity.NO_GRAVITY, x, y);
 		}
         
@@ -1176,7 +1263,10 @@ public class SelectableTextView extends TextView implements OnClickListener, OnL
 				int cw = SelectableTextView.this.getMeasuredWidth();
 				int iw = view.getMeasuredWidth();
 //				Log.d("widht ----- ", cw + ":" + iw);
+				Log.d("x : iw----- ", x + ":" + iw);
+
 				x = x + iw >= cw ? cw - iw : x;
+				x = x < 0 ? 0 : x;
 				mContainer.update(x, y, -1, -1);
 			}
 		}
@@ -1199,14 +1289,144 @@ public class SelectableTextView extends TextView implements OnClickListener, OnL
 			// hide action windows
 		}
 
-		
+	}
+	public class SelectionInfo {
+	    
+		private Object mSpan;
+		private int mStart;
+		private int mEnd;
+		private Spannable mSpannable;
+	    
+		public SelectionInfo() {
+			clear();
+		}
+	    
+		public SelectionInfo(CharSequence text, Object span, int start, int end) {
+			set(text, span, start, end);
+		}
+	    
+		/**
+		 * select the {@link #getSpannable()} between the offsets {@link this.getStart()} and
+		 * {@link #getEnd()}
+		 */
+		public void select() {
+			select(mSpannable);
+		}
+	    
+		public void select(Spannable text) {
+			if (text != null) {
+				text.removeSpan(mSpan);
+				text.setSpan(mSpan, Math.min(mStart, mEnd), Math.max(mStart, mEnd), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
+			}
+		}
+	    
+		/**
+		 * remove the the selection
+		 */
+		public void remove() {
+			remove(mSpannable);
+		}
+	    
+		public void remove(Spannable text) {
+			if (text != null) {
+				text.removeSpan(mSpan);
+			}
+		}
+	    
+		public void clear() {
+			mSpan = null;
+			mSpannable = null;
+			mStart = 0;
+			mEnd = 0;
+		}
+	    
+		public void set(Object span, int start, int end) {
+			mSpan = span;
+			mStart = start;
+			mEnd = end;
+		}
+	    
+		public void set(CharSequence text, Object span, int start, int end) {
+			if (text instanceof Spannable) {
+				mSpannable = (Spannable) text;
+			}
+			set(span, start, end);
+		}
+	    
+		public CharSequence getSelectedText() {
+			if (mSpannable != null) {
+				int start = Math.min(mStart, mEnd);
+				int end = Math.max(mStart, mEnd);
+	            
+				if (start >= 0 && end < mSpannable.length()) {
+					return mSpannable.subSequence(start, end);
+				}
+			}
+			return "";
+		}
+	    
+		public Object getSpan() {
+			return mSpan;
+		}
+	    
+		public void setSpan(CharacterStyle span) {
+			mSpan = span;
+		}
+	    
+	    
+		/**
+		 * get the starting offset of the selection. Note the the starting offset is
+		 * not necessarily smaller than the ending offset
+		 * @return the starting offset of the selection
+		 */
+		public int getStart() {
+			return mStart;
+		}
+	    
+		/**
+		 * set the starting offset of the selection (inclusive)
+		 * @param start the starting offset. It can be larger than {@link #getEnd()}
+		 */
+		public void setStart(int start) {
+			assert (start >= 0);
+			mStart = start;
+		}
+	    
+		/**
+		 * get the ending offset of the selection. Note the the ending offset is
+		 * not necessarily larger than the starting offset
+		 * @return the ending offset of the selection
+		 */
+		public int getEnd() {
+			return mEnd;
+		}
+	    
+		/**
+		 * set the ending offset of the selection (exclusive)
+		 * @param end the ending offset. It can be smaller than {@link #getStart()}
+		 */
+		public void setEnd(int end) {
+			assert (end >= 0);
+			mEnd = end;
+		}
+	    
+		public Spannable getSpannable() {
+			return mSpannable;
+		}
+	    
+		public void setSpannable(Spannable spannable) {
+			mSpannable = spannable;
+		}
+	    
+		/**
+		 * Checks the weather the specified offset is within the range of the selection
+		 * @param offset the offset to check
+		 * @return true if the offset is within the range of the selection, false otherwise.
+		 */
+		public boolean offsetInSelection(int offset) {
+			return (offset >= mStart && offset <= mEnd) ||
+	        (offset >= mEnd && offset <= mStart);
+		}
 	}
 
-
-	
 }
-
-/*
- Note for future me:
- The "LINE" for layout uses 0 based index e.g. getLineForVertical
- */
