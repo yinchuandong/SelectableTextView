@@ -629,23 +629,6 @@ public class SelectableTextView extends TextView implements OnClickListener,
 		mTouchX = (int) event.getX();
 		mTouchY = (int) event.getY();
 		
-		switch (event.getAction()) {
-		case MotionEvent.ACTION_CANCEL:
-		case MotionEvent.ACTION_UP:
-			int left = getLeft();
-			int right = getRight();
-			int top = getTop();
-			int bottom = getBottom();
-			Log.d("onTouchEvent", "up");
-
-			
-			
-			break;
-
-		default:
-			break;
-		}
-		
 		return super.onTouchEvent(event);
 	}
 	
